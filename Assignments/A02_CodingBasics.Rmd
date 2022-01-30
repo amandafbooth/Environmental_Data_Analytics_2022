@@ -1,6 +1,6 @@
 ---
 title: "Assignment 2: Coding Basics"
-author: "Student Name"
+author: "Amanda Booth"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -33,10 +33,18 @@ This exercise accompanies the lessons in Environmental Data Analytics on coding 
 ```{r}
 #1. 
 
+seq1 <- seq(1, 100, 4)
+
 #2. 
+
+mean(seq1)
+median(seq1)
 
 #3. 
 
+mean(seq1) > median(seq1)
+
+#4. The object seq1 is a sequence of numbers between 1 and 100 that increase by fours. In part 2 I calcuated the mean and median of seq1, which are both 49. In part 3, I tested if the mean of seq1 was greater than the median of seq1, which it wasn't since they are both 49. 
 ```
 
 ## Basics Day 2
@@ -51,11 +59,32 @@ This exercise accompanies the lessons in Environmental Data Analytics on coding 
 
 ```{r}
 
+#5.
+
+names <- c("Anna, Bob, Josie, Maria")
+scores <- c(45,95,75,55)
+pass_status <- c(FALSE,TRUE,TRUE,TRUE)
+
+#6.
+
+class(names) #character
+class(scores) #numeric
+class(pass_status) #logical
+
+#7.
+
+student_info <- cbind.data.frame(names, scores, pass_status)
+
+#8.
+
+student_info <- data.frame("Name"=names,"Score"=scores, "Passed"=pass_status)
+
+
 ```
 
 9. QUESTION: How is this data frame different from a matrix?
 
-> Answer: 
+> Answer: A matrix can only have one class of data, while a data frame can have multiple
 
 10. Create a function with an if/else statement. Your function should determine whether a test score is a passing grade of 50 or above (TRUE or FALSE). You will need to choose either the `if` and `else` statements or the `ifelse` statement. Hint: Use `print`, not `return`. The name of your function should be informative.
 
@@ -63,8 +92,19 @@ This exercise accompanies the lessons in Environmental Data Analytics on coding 
 
 ```{r}
 
+#10.
+
+pass_function <- function(x) {
+  ifelse(x > 50, "Pass", "Fail") 
+} 
+
+
+
+#11.
+
+pass_function(scores)
 ```
 
 12. QUESTION: Which option of `if` and `else` vs. `ifelse` worked? Why?
 
-> Answer: 
+> Answer: 'ifelse' worked because unlike 'if' and 'else' it calculates all of the values in a vector.
