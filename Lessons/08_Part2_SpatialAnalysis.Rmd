@@ -48,6 +48,7 @@ library(tidyverse)
 library(lubridate)
 library(sf)
 library(mapview)
+library(leaflet)
 library(RColorBrewer)
 ```
 
@@ -76,6 +77,8 @@ st_crs(epa_pm25_sites_sf)$epsg
 #Plot the data
 ggplot(data=epa_pm25_sites_sf) +
   geom_sf()
+
+mapview(epa_pm25_sites_sf)
 ```
 
 ## 2.2 Reading shapefiles into R with `sf`
@@ -365,11 +368,14 @@ mapview(neuse_counties_sf, zcol='Area_m2')
 ```{r EXERCISE: Clipping}
 #Select the Triangle County from the 
 
-
+triangle_co <- counties_sf_utm %>%
+  filter(NAME %in% c('Chatham', 'Durham', 'Orange', 'Wake'))
 
   
 #Grab the intersecting HUC_8s
 
+triangle_HUCs <- huc8_sf_utm %>%
+  filter(st_intersects(x = ., y = triangle_co, sparse = F))
 
 
 #Intersect the HUC_8s

@@ -120,6 +120,8 @@ EPAair.sf <- EPAair.sites %>%
 
 #View the data using the methods above...
 
+mapview(EPAair.sf)
+
 ```
 
 ### EXERCISE: Creating a spatial dataframe from known coordinates
