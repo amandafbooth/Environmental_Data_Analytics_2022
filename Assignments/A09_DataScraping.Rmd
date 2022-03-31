@@ -1,6 +1,6 @@
 ---
 title: "Assignment 09: Data Scraping"
-author: "Student Name"
+author: "Amanda Booth"
 output: pdf_document
 geometry: margin=2.54cm
 editor_options: 
@@ -31,12 +31,31 @@ This exercise accompanies the lessons in Environmental Data Analytics on data sc
 ```{r, message = FALSE}
 #1
 
+#Check working directory 
+
+getwd()
+
+#Load packages
+
+library(tidyverse)
+library(rvest)
+library(lubridate)
+
+#Build theme
+mytheme <- theme_linedraw(base_size = 10) +
+  theme(axis.text = element_text(color = "rosybrown"), 
+        legend.position = "bottom")
+
+#Set as default theme
+theme_set(mytheme)
+
+
 
 ```
 
 2. We will be scraping data from the NC DEQs Local Water Supply Planning website, specifically the Durham's 2019 Municipal Local Water Supply Plan (LWSP): 
  * Navigate to https://www.ncwater.org/WUDC/app/LWSP/search.php
- * Change the date from 2020 to 2019 in the upper right corner.
+ * Change the date from 2021 to 2020 in the upper right corner.
  * Scroll down and select the LWSP link next to Durham Municipality. 
  * Note the web address: <https://www.ncwater.org/WUDC/app/LWSP/report.php?pwsid=03-32-010&year=2020>
 
@@ -45,6 +64,8 @@ Indicate this website as the as the URL to be scraped. (In other words, read the
 
 ```{r set.the.scraping.website}
 #2
+
+webpage <- read_html('https://www.ncwater.org/WUDC/app/LWSP/report.php?pwsid=03-32-010&year=2020')
 
 
 ```
@@ -65,10 +86,29 @@ In the code chunk below scrape these values, assigning them to three separate va
 
 ```{r scrape.the.data}
 #3
-water.system.name <- 
-pswid <- 
-ownership <- 
-max.withdrawals.mgd <- 
+water.system.name <- webpage %>% 
+  html_nodes("div+ table tr:nth-child(1) td:nth-child(2)") %>% 
+  html_text()
+
+water.system.name
+
+pswid <- webpage %>% 
+  html_nodes("td tr:nth-child(1) td:nth-child(5)") %>% 
+  html_text()
+
+pswid
+  
+ownership <-  webpage %>% 
+  html_nodes("div+ table tr:nth-child(2) td:nth-child(4)") %>% 
+  html_text()
+
+ownership
+
+max.withdrawals.mgd <- webpage %>% 
+  html_nodes("th~ td+ td") %>% 
+  html_text()
+
+max.withdrawals.mgd
 
 ```
 
@@ -84,10 +124,27 @@ max.withdrawals.mgd <-
 ```{r create.a.dataframe.from.scraped.data}
 #4
 
+Durham_df <- data.frame(
+  "Water system name" = water.system.name,
+  "Ownership" = ownership,
+  "PSWID" = pswid,
+  "Max daily use" = as.numeric(max.withdrawals.mgd), 
+  "Month" = c(01, 05, 09, 02, 06, 10, 03, 07, 11, 4, 08, 12),
+  "Year" = 2020)
 
+Durham_df <- arrange(Durham_df, Month)
+
+Durham_df <- Durham_df %>%
+  mutate(Date = my(paste(Month,"-",Year)))
+
+Durham_df$Month <- month.abb[Durham_df$Month]
 
 #5
 
+Plot1 <- ggplot(Durham_df) +
+  geom_point(aes(x = Date, y = Max.daily.use))
+
+print(Plot1)
 
 
 ```
@@ -97,7 +154,41 @@ max.withdrawals.mgd <-
 ```{r construct.a.scraping.function}
 #6.
 
+#Create function
+scrape.it <- function(Year, pswid){
+  
+#Retrieve content
+website <- read_html(paste0('https://www.ncwater.org/WUDC/app/LWSP/report.php?pwsid=', 
+                                  pswid, '&year=', Year))
 
+  
+#Set tags
+  
+water.system.tag <- 'div+ table tr:nth-child(1) td:nth-child(2)'
+pswid.tag <- 'td tr:nth-child(1) td:nth-child(5)'
+ownership.tag <-  'div+ table tr:nth-child(2) td:nth-child(4)'
+max.use.tag <- 'th~ td+ td'
+  
+#Scrape data
+the_water.system <- website %>% html_nodes(water.system.tag) %>% html_text()
+the_pswid <- website %>%   html_nodes(pswid.tag) %>%  html_text()
+the_ownership <- website %>% html_nodes(ownership.tag) %>% html_text()
+the_max.use <- website %>% html_nodes(max.use.tag) %>% html_text()
+  
+#Create dataframe
+df_withdrawals <- data.frame("Month" = c(01, 05, 09, 02, 06, 10, 03, 07, 11, 4, 08, 12),
+                               "Year" = rep(Year,12),
+                               "Max.daily.use" = as.numeric(the_max.use)) %>% 
+    mutate(Water_system = !!the_water.system,
+           PSWID = !!the_pswid,
+           Ownership = !!the_ownership,
+           Date = my(paste(Month,"-",Year)))
+  
+  
+#Return dataframe
+return(df_withdrawals)
+
+}
 
 ```
 
@@ -106,15 +197,33 @@ max.withdrawals.mgd <-
 ```{r fetch.and.plot.Durham.2015.data}
 #7
 
-
+Durham2015_df <- scrape.it(2015,'03-32-010')
+view(Durham2015_df)
 ```
 
 8. Use the function above to extract data for Asheville (PWSID = 01-11-010) in 2015. Combine this data with the Durham data collected above and create a plot that compares the Asheville to Durham's water withdrawals.
 
-```{r fetch.and.plot.Durham.2015.data}
+```{r fetch.and.plot.Asheville.2015.data}
 #8
 
+#Scrape Asheville
+Asheville2015_df <- scrape.it(2015,'01-11-010')
+view(Asheville2015_df)
 
+#Combine data
+
+df_2015 <-  bind_rows(Durham2015_df, Asheville2015_df)
+  
+  merge(x = Durham2015_df, y = Asheville2015_df, by = "Date")
+                     
+
+#Plot data
+
+Plot2 <- ggplot(df_2015) +
+  geom_point(aes(x = Date, y = Max.daily.use, color = Water_system)) +
+  labs(y = "Max daily use (by month)", color = "Water system")
+
+print(Plot2)
 ```
 
 
@@ -123,7 +232,29 @@ max.withdrawals.mgd <-
 ```{r}
 #9
 
+#Scrape 2010-2019
+
+the_years = rep(2010:2019)
+asheville = '01-11-010'
+asheville_dfs <- lapply(X = the_years,
+                  FUN = scrape.it,
+                  pswid = asheville)
+
+#Combine rows
+asheville_df <- bind_rows(asheville_dfs)
+
+#Plot 
+
+Plot3 <- ggplot(asheville_df, aes(x = Date, y = Max.daily.use)) +
+  geom_point() +
+  geom_smooth(method = "lm") + 
+  labs(y = "Max daily use (by month)")
+
+print(Plot3)
+  
 
 ```
 
 >Question: Just by looking at the plot (i.e. not running statistics), does Asheville have a trend in water usage over time?
+
+> Answer: Yes, the plot shows a trend that suggests there is an increase in water usage over time. 
